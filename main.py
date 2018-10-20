@@ -8,18 +8,13 @@ factor_path = "input_factors.ini"
 def get_factors():
     factors = {}
     with open(factor_path, 'r') as f:
-        lines = f.readlines()
-        for line in lines:
+        for line in f.readlines():
             if '[' in line:
                 current_set = re.sub(r'[\[|\]|\n]', '', line)
                 factors[current_set] = {}
             elif '=' in line:
                 direction, factor = [_.strip() for _ in line.split('=')]
-                if factor.isnumeric():
-                    factor = int(factor)
-                else:
-                    factor = 1
-                factors[current_set][direction] = factor
+                factors[current_set][direction] = int(factor) if factor.isnumeric() else 1
         f.close()
     return factors
 
@@ -36,7 +31,7 @@ def get_files(path, extension):
 
 def process(file, direction, factors):
     filename = os.path.splitext(file)
-    with open(''.join(filename), 'r') as f:
+    with open(file, 'r') as f:
         factor_files = {}
         touch(output_path)
         for factor in factors:
