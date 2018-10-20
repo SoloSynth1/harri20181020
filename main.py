@@ -73,7 +73,7 @@ def write(file, average):
             row_items = line.split(',')
             if '[Name]' in line:
                 current_surface = lines[i+1].strip('\n')
-            elif is_datarow(row_items):
+            if is_datarow(row_items):
                 idx = int(row_items[0])
                 for factor_set in average:
                     row_items[4] = ' {:.8e}\n'.format(average[factor_set][current_surface][idx])
