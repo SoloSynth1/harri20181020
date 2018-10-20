@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 
 data_path = "data"
 output_path = "."
@@ -47,10 +48,9 @@ def process(file, direction, factors):
             else:
                 for factor in factors:
                     factor_files[factor].write(line)
-        f.close()
 
 if __name__ == "__main__":
     factors = get_factors()
     files = get_files(data_path, ".csv")
     for file, direction in files.items():
-        process(file, direction, factors)
+        threading.Thread(target=process, args=(file, direction, factors)).start()
