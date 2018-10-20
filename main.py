@@ -38,23 +38,20 @@ def process(file, direction, factors):
     filename = os.path.splitext(file)
     with open(''.join(filename), 'r') as f:
         factor_files = {}
-        factors_name = list(factors.keys())
         touch(output_path)
-        for factor in factors_name:
-            factor_files[factor] = open(filename[0].replace(data_path, output_path)+'_'+factor+filename[1],'w+')
-        lines = f.readlines()
-        for line in lines:
+        for factor in factors:
+            factor_files[factor] = open(filename[0].replace(data_path, output_path)+'_'+factor+filename[1],'w')
+        for line in f.readlines():
             row_items = line.split(',')
             if len(row_items) == 5 and row_items[0].isnumeric():
                 average = sum([float(x) for x in row_items[1:4]])/3
-                for factor in factors_name:
+                for factor in factors:
                     row_items[4] = average * factors[factor][direction]
-                    row_items[4] = ' {:.7e}\n'.format(row_items[4])
+                    row_items[4] = ' {:.8e}\n'.format(row_items[4])
                     factor_files[factor].write(','.join(row_items))
             else:
-                for factor in factors_name:
+                for factor in factors:
                     factor_files[factor].write(line)
-
         f.close()
 
 if __name__ == "__main__":
