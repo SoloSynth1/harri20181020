@@ -16,7 +16,7 @@ def get_factors():
                 factors[current_set] = {}
             elif '=' in line:
                 direction, factor = [_.strip() for _ in line.split('=')]
-                factors[current_set][direction] = int(factor) if factor.isnumeric() else 1
+                factors[current_set][direction] = float(factor) if factor.replace('.', '').isnumeric() else 1
         f.close()
     return factors
 
@@ -66,21 +66,23 @@ def write(file, average):
     with open(file, 'r') as f:
         files = {}
         touch(output_path)
+        lines = f.readlines()
         for factor_set in average:
             files[factor_set] = open(filename[0].replace(data_path, output_path)+'_'+factor_set+filename[1],'w')
-        lines = f.readlines()
-        for i, line in enumerate(lines):
-            row_items = line.split(',')
-            if '[Name]' in line:
-                current_surface = lines[i+1].strip('\n')
-            if is_datarow(row_items):
-                idx = int(row_items[0])
-                for factor_set in average:
-                    row_items[4] = ' {:.8e}\n'.format(average[factor_set][current_surface][idx])
-                    files[factor_set].write(','.join(row_items))
-            else:
-                for factor_set in average:
-                    files[factor_set].write(line)
+            threading.Thread(target=write_thread, args=(files[factor_set], lines, average[factor_set])).start()
+
+def write_thread(opened_file, lines, factor_set):
+    for i, line in enumerate(lines):
+        row_items = line.split(',')
+        if '[Name]' in line:
+            current_surface = lines[i+1].strip('\n')
+        if is_datarow(row_items):
+            idx = int(row_items[0])
+            row_items[4] = ' {:.8e}\n'.format(factor_set[current_surface][idx])
+            opened_file.write(','.join(row_items))
+        else:
+            opened_file.write(line)
+    opened_file.close()
 
 def process(data, factors):
     average = {}
