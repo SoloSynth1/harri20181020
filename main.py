@@ -1,6 +1,7 @@
 import os
 import re
 import threading
+import numpy as np
 
 data_path = "data"
 output_path = "."
@@ -30,27 +31,79 @@ def get_files(path, extension):
             files[os.path.join(path,file)] = os.path.splitext(file)[0].split("_")[1]
     return files
 
-def process(file, direction, factors):
+def read(files):
+    data = {}
+    threads = []
+    for file, direction in files.items():
+        t = threading.Thread(target=get_surfaces, args=(data, direction, file))
+        t.start()
+        threads.append(t)
+    for thread in threads:
+        thread.join()
+    return data
+
+def get_surfaces(data, direction, file):
+    result = {}
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        for i, line in enumerate(lines):
+            if "[Name]" in line:
+                current_surface = lines[i+1].strip('\n')
+                result[current_surface] = []
+            else:
+                row_items = line.split(',')
+                if is_datarow(row_items):
+                    result[current_surface].append(float(row_items[4].strip('\n')))
+        for surface in result:
+            result[surface] = np.array(result[surface])
+    data[direction] = result
+
+def is_datarow(row_items):
+    return (len(row_items) == 5 and row_items[0].isnumeric())
+
+def write(file, average):
     filename = os.path.splitext(file)
     with open(file, 'r') as f:
-        factor_files = {}
+        files = {}
         touch(output_path)
-        for factor in factors:
-            factor_files[factor] = open(filename[0].replace(data_path, output_path)+'_'+factor+filename[1],'w')
-        for line in f.readlines():
+        for factor_set in average:
+            files[factor_set] = open(filename[0].replace(data_path, output_path)+'_'+factor_set+filename[1],'w')
+        lines = f.readlines()
+        for i, line in enumerate(lines):
             row_items = line.split(',')
-            if len(row_items) == 5 and row_items[0].isnumeric():
-                average = sum([float(x) for x in row_items[1:4]])/3
-                for factor in factors:
-                    row_items[4] = average * factors[factor][direction]
-                    row_items[4] = ' {:.8e}\n'.format(row_items[4])
-                    factor_files[factor].write(','.join(row_items))
+            if '[Name]' in line:
+                current_surface = lines[i+1].strip('\n')
+            elif is_datarow(row_items):
+                idx = int(row_items[0])
+                for factor_set in average:
+                    row_items[4] = ' {:.8e}\n'.format(average[factor_set][current_surface][idx])
+                    files[factor_set].write(','.join(row_items))
             else:
-                for factor in factors:
-                    factor_files[factor].write(line)
+                for factor_set in average:
+                    files[factor_set].write(line)
+
+def process(data, factors):
+    average = {}
+    surfaces = []
+    for direction in data:
+        surfaces += data[direction]
+    surfaces = set(surfaces)
+    for factor_set in factors:
+        average[factor_set] = {}
+        for surface in surfaces:
+            average[factor_set][surface] = []
+            for direction in data:
+                if surface in data[direction]:
+                    average[factor_set][surface].append(np.multiply(data[direction][surface],factors[factor_set][direction]))
+    for factor_set in average:
+        for surface in average[factor_set]:
+            average[factor_set][surface] = np.average(np.array(average[factor_set][surface]), axis=0)
+    return average
 
 if __name__ == "__main__":
     factors = get_factors()
     files = get_files(data_path, ".csv")
-    for file, direction in files.items():
-        threading.Thread(target=process, args=(file, direction, factors)).start()
+    data = read(files)
+    average = process(data, factors)
+    for file in files:
+        threading.Thread(target=write, args=(file, average)).start()
