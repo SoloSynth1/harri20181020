@@ -39,9 +39,7 @@ def get_files(path, extension):
     files = {}
     for file in os.listdir(path):
         if file.lower().endswith(extension.lower()):
-            file_detail = [os.path.splitext(file)[0].split("_")[1], os.path.getsize(file)]
-            print(file_detail)
-            files[os.path.join(path, file)] = file_detail
+            files[os.path.join(path, file)] = os.path.splitext(file)[0].split("_")[1]
     return files
 
 
