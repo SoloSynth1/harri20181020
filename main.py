@@ -7,6 +7,7 @@ data_path = "data"
 output_path = "."
 factor_path = "input_factors.ini"
 
+
 def get_factors():
     factors = {}
     with open(factor_path, 'r') as f:
@@ -16,20 +17,33 @@ def get_factors():
                 factors[current_set] = {}
             elif '=' in line:
                 direction, factor = [_.strip() for _ in line.split('=')]
-                factors[current_set][direction] = float(factor) if factor.replace('.', '').isnumeric() else 1
+                factors[current_set][direction] = percent_convert(factor)
         f.close()
+    print(factors)
     return factors
+
+
+def percent_convert(factor):
+    if "%" in factor:
+        return float(factor.replace('%', ''))/100
+    else:
+        return 1
+
 
 def touch(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
 def get_files(path, extension):
     files = {}
     for file in os.listdir(path):
         if file.lower().endswith(extension.lower()):
-            files[os.path.join(path,file)] = os.path.splitext(file)[0].split("_")[1]
+            file_detail = [os.path.splitext(file)[0].split("_")[1], os.path.getsize(file)]
+            print(file_detail)
+            files[os.path.join(path, file)] = file_detail
     return files
+
 
 def read(files):
     data = {}
@@ -41,6 +55,7 @@ def read(files):
     for thread in threads:
         thread.join()
     return data
+
 
 def get_surfaces(data, direction, file):
     result = {}
