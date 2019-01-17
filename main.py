@@ -115,10 +115,26 @@ def process(data, factors):
             average[factor_set][surface] = np.average(np.array(average[factor_set][surface]), axis=0)
     return average
 
+def sort_directions(data):
+    user_surfaces = []
+    for direction_name, surface_arrays in data.items():
+        user_surfaces.append((direction_name, len(surface_arrays.keys()),surface_arrays.keys()))
+    return sorted(user_surfaces, key=lambda x: x[1], reverse=True)
+
 if __name__ == "__main__":
     factors = get_factors()
     files = get_files(data_path, ".csv")
     data = read(files)
+    display_list = sort_directions(data) # sort the directions by the # of user surfaces they have
+    for item in display_list:
+        print(item)
+    the_chosen_one = display_list[0]    # get only the first item
+    data = {the_chosen_one[0]: data[the_chosen_one[0]]}    # delete other directions
+    for file_name, direction in files.items():
+        if direction == the_chosen_one[0]:
+            files = {file_name: direction}
+            break
     average = process(data, factors)
     for file in files:
         threading.Thread(target=write, args=(file, average)).start()
+    input("Process have reached the end.")
