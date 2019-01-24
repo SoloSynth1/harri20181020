@@ -115,26 +115,30 @@ def process(data, factors):
             average[factor_set][surface] = np.average(np.array(average[factor_set][surface]), axis=0)
     return average
 
-def sort_directions(data):
+def choose_direction(data, average):
     user_surfaces = []
     for direction_name, surface_arrays in data.items():
-        user_surfaces.append((direction_name, len(surface_arrays.keys()),surface_arrays.keys()))
-    return sorted(user_surfaces, key=lambda x: x[1], reverse=True)
-
+        user_surfaces.append((direction_name, len(surface_arrays.keys())))
+    #get the number of surfaces stored in average as keys
+    user_surfaces = sorted(user_surfaces, key=lambda x: x[1], reverse=True)
+    chosen_surface_num = user_surfaces[0][1]
+    average_surface_num = len(average[next(iter(average))].keys())
+    #I am not sure if this is really necessary to check if they are equal
+    if average_surface_num == chosen_surface_num:
+        return user_surfaces[0][0]
+    
+           
 if __name__ == "__main__":
+    input("Factors in input_factors.ini should be expressed in %. For any factor without %, it will be returned as 1.\n Press any button to continue.")
     factors = get_factors()
     files = get_files(data_path, ".csv")
     data = read(files)
-    display_list = sort_directions(data) # sort the directions by the # of user surfaces they have
-    for item in display_list:
-        print(item)
-    the_chosen_one = display_list[0]    # get only the first item
-    data = {the_chosen_one[0]: data[the_chosen_one[0]]}    # delete other directions
+    average = process(data, factors)
+    the_chosen_one = choose_direction(data, average) # pick the file as expressed in its direction that has the same number of surfaces in average
     for file_name, direction in files.items():
-        if direction == the_chosen_one[0]:
+        if direction == the_chosen_one:
             files = {file_name: direction}
             break
-    average = process(data, factors)
     for file in files:
         threading.Thread(target=write, args=(file, average)).start()
     input("Process have reached the end.")
