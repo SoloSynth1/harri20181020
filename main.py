@@ -1,4 +1,4 @@
-Thimport os
+import os
 import re
 import threading
 import numpy as np
@@ -120,7 +120,9 @@ def choose_direction(data, average):
     average_surfaces = [average_surface for average_surface in average[next(iter(average))].keys()]
     for direction, data_surfaces in data_direction_surfaces:
         if all(average_surface in data_surfaces for average_surface in average_surfaces):
-            return direction  
+            return direction
+    print("None of the csv file contains all surfaces. This just does not work here...")
+    quit()
            
 if __name__ == "__main__":
     factors = get_factors()
