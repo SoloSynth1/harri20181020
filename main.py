@@ -115,26 +115,24 @@ def process(data, factors):
             average[factor_set][surface] = np.average(np.array(average[factor_set][surface]), axis=0)
     return average
 
-def sort_directions(data):
-    user_surfaces = []
-    for direction_name, surface_arrays in data.items():
-        user_surfaces.append((direction_name, len(surface_arrays.keys()),surface_arrays.keys()))
-    return sorted(user_surfaces, key=lambda x: x[1], reverse=True)
-
+def choose_direction(data, average):
+    data_direction_surfaces = [(direction, data_surfaces.keys()) for direction, data_surfaces in data.items()]
+    average_surfaces = [average_surface for average_surface in average[next(iter(average))].keys()]
+    for direction, data_surfaces in data_direction_surfaces:
+        if all(average_surface in data_surfaces for average_surface in average_surfaces):
+            return direction
+    return None
+           
 if __name__ == "__main__":
     factors = get_factors()
     files = get_files(data_path, ".csv")
     data = read(files)
-    display_list = sort_directions(data) # sort the directions by the # of user surfaces they have
-    for item in display_list:
-        print(item)
-    the_chosen_one = display_list[0]    # get only the first item
-    data = {the_chosen_one[0]: data[the_chosen_one[0]]}    # delete other directions
-    for file_name, direction in files.items():
-        if direction == the_chosen_one[0]:
-            files = {file_name: direction}
-            break
     average = process(data, factors)
-    for file in files:
-        threading.Thread(target=write, args=(file, average)).start()
+    the_chosen_one = choose_direction(data, average)
+    if the_chosen_one == None:
+        print("None of the csv file contains all surfaces. This just does not work here...")
+    else:
+        files = {file_name: direction for file_name, direction in files.items() if direction == the_chosen_one}
+        for file in files:
+            write(file, average)
     input("Process have reached the end.")
